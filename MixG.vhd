@@ -3,7 +3,7 @@
 -- The current implementation doesn't latch the state of A-D inputs
 -- or outputs when Start or Valid strobe. Therefore the data inputs
 -- must remain valid throughout all the steps and outputs are only
--- valid when cValid is asserted. It is designed this way to save 
+-- valid when Valid is asserted. It is designed this way to save 
 -- registers by delegating them to the logic that instantiates 
 -- this block.
 
@@ -13,25 +13,25 @@ library ieee;
 
 entity MixG is
   port(
-    aReset : in std_logic;
-    Clk    : in std_logic;
-    cStart : in boolean;
-    cValid : out boolean;
-    cA_in  : in unsigned(63 downto 0);
-    cB_in  : in unsigned(63 downto 0);
-    cC_in  : in unsigned(63 downto 0);
-    cD_in  : in unsigned(63 downto 0);
-    cX     : in unsigned(63 downto 0);
-    cY     : in unsigned(63 downto 0);
-    cA_out : out unsigned(63 downto 0);
-    cB_out : out unsigned(63 downto 0);
-    cC_out : out unsigned(63 downto 0);
-    cD_out : out unsigned(63 downto 0)
+    aReset: in  std_logic;
+    Clk   : in  std_logic;
+    Start : in  boolean;
+    Valid : out boolean;
+    A_in  : in  unsigned(63 downto 0);
+    B_in  : in  unsigned(63 downto 0);
+    C_in  : in  unsigned(63 downto 0);
+    D_in  : in  unsigned(63 downto 0);
+    X     : in  unsigned(63 downto 0);
+    Y     : in  unsigned(63 downto 0);
+    A_out : out unsigned(63 downto 0);
+    B_out : out unsigned(63 downto 0);
+    C_out : out unsigned(63 downto 0);
+    D_out : out unsigned(63 downto 0)
   );
 end MixG;
 
 architecture rtl of MixG is
-  signal cA, cB, cC, cD : unsigned(63 downto 0);
+  signal A, B, C, D : unsigned(63 downto 0);
   signal cStep : unsigned(2 downto 0) := (others => '0');
 begin
 
@@ -39,51 +39,51 @@ begin
   begin
     if aReset = '1' then
       cStep  <= (others => '0');
-      cA     <= (others => '0');
-      cB     <= (others => '0');
-      cC     <= (others => '0');
-      cD     <= (others => '0');
-      cValid <= false;
+      A     <= (others => '0');
+      B     <= (others => '0');
+      C     <= (others => '0');
+      D     <= (others => '0');
+      Valid <= false;
       
     elsif rising_edge(Clk) then
       
-      cValid <= false;
+      Valid <= false;
       cStep <= cStep + 1;
       
       case(step) is
       
         when x"0" =>
-          if  not cStart then
+          if  not Start then
           -- Get stuck in here until start is asserted
             cStep <= cStep;
           else 
-            cA <= cA_in + cB_in + cX;
+            A <= A_in + B_in + X;
           end if;
 
         when x"1" =>
-          cD <= (cD_in xor cA) ror 32;
+          D <= (D_in xor A) ror 32;
         when x"2" =>
-          cC <= cC_in + cD;
+          C <= C_in + D;
         when x"3" =>
-          cB <= (cB_in xor cC) ror 24;
+          B <= (B_in xor C) ror 24;
         when x"4" =>
-          cA <= cA + cB + cY;
+          A <= A + B + Y;
         when x"5" =>
-          cD <= (cD xor cA) ror 16;
+          D <= (D xor A) ror 16;
         when x"6" =>
-          cC <= cC + cD;
+          C <= C + D;
         when x"7" =>
-          cB <= (cB xor cC) ror 63; -- Rotate left 1
-          cValid <= true;
+          B <= (B xor C) ror 63; -- Rotate left 1
+          Valid <= true;
           
       end case;
 
     end if;
   end process;
 
-  cA_out <= cA;
-  cB_out <= cB;
-  cC_out <= cC;
-  cD_out <= cD;
+  A_out <= A;
+  B_out <= B;
+  C_out <= C;
+  D_out <= D;
 
 end rtl;

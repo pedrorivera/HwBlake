@@ -35,4 +35,10 @@ package PkgBlake2b is
   -- enabling up to ~4.3 GB.
   constant kMaxMsgLen : integer := 32;
   
+  -- Length in bytes of the hashed result
+  constant kHashLen : integer := 512;
+  
+  -- Length in bytes of the optional key
+  constant kKeyLen  : integer := 64;
+  
 end PkgBlake2b;

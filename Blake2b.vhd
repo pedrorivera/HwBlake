@@ -15,34 +15,32 @@ library work;
   use work.PkgBlake2b.vhd
 
 entity Blake2b is
-  generic(
-    kHashSize : integer := 512; -- Defines the length of the hashed result
-    kKeySize  : integer := 64   -- Defines the length of the optional key
-  );
   port(
     aReset : in std_logic;
     Clk    : in std_logic;
-    cPush  : in boolean;  
-    cReady : out boolean;  
-    -- Will assert for a single clock cycle to indicate the result is available.
-    cDone  : out boolean; 
+    -- Loads data in Msg and starts the hashing process.
+    Push  : in boolean;  
+    -- Indicates the interface is not ready to receive data.
+    Busy : out boolean;  
+    -- Will assert for a single clock cycle to indicate the final hash is available.
+    Done  : out boolean; 
     -- Partial message input
-    cMsg   : in U64Array_t(15 downto 0);
-    -- Message length in bytes.
-    cMsgLen : in unsigned(kMaxMsgLen-1 downto 0) ;
+    Msg   : in U64Array_t(15 downto 0);
+    -- Full message length in bytes. Only needs to be valid if Done is true.
+    MsgLen : in unsigned(kMaxMsgLen-1 downto 0) ;
     -- Optional key parameter
-    cKey   : in std_logic_vector(63 downto 0);
-    -- Result
-    cHashOut  : out U64Array_t(7 downto 0)
+    Key   : in std_logic_vector(63 downto 0);
+    -- Result, only valid when Done is true.
+    HashOut  : out U64Array_t(7 downto 0)
   );
 end Blake2b;
 
 architecture rtl of Blake2b is
   
-  type State_t is (Idle, WaitMix1, WaitMix2, Done);
-  signal cState : State_t;
+  type State_t is (Done, LoadMsg, Compress);
+  signal State : State_t;
 
-  signal H : U64Array_t(7 downto 0);
+  signal H : U64Array_t(0 to 7);
 
 begin
 
@@ -52,17 +50,16 @@ begin
 
   Compressor: CompressF
   port map(
-    aReset => aReset,
-    Clk    => Clk,
-    cStart => 
-    cLast  =>
-    cDone  =>
-    cMsg   =>
-    cHin   =>
-    cHout  =>
-    cNumBytes =>
+    aReset   => aReset,
+    Clk      => Clk,
+    Start    => StartF,
+    Last     => Last,
+    Done     => DoneF,
+    Msg      => MsgPart,
+    Hin      => Hin,
+    Hout     => Hout,
+    Offset   => Offset
   );
-
 
   --------------------------------------------------------------------
   -- Control FSM
@@ -71,35 +68,64 @@ begin
   begin
 
     if aReset = '1' then
+      
+      Hin    <= kIV;
+      State  <= Done;
+      Offset <= 0;
+      MaxOffset <= 0;
+      Busy <= false;
+      Done <= true;
+      HashOut <= --zeros
 
-      cState  <= Idle;
-      
-      
     elsif rising_edge(Clk) then
-
-      -- Default values of flag signals
-      cDone   <= false;
-      cStartG <= false;
       
-      case(cState) is
+      case(State) is
         
-        -- Do nothing until cStart asserted
-        when Idle =>
-          
-          if cStart then 
+        -- Idle state
+        when Done =>
 
-           
+          if Push then
+            -- Load first partial message
+            Hin       <= kIV;
+            MsgPart   <= Msg;
+            MaxOffset <= MsgLen - 128;
+            Offset    <= 0;
+            Last      <= false;
+            StartF    <= true;
+            Busy      <= true;
+            State     <= Compress;
+          end if;
+
+        -- Waits for compression to be done
+        when Compress =>
+
+          if DoneF then
+            Busy  <= false;
+            -- If there are blocks remaining
+            if Offset < MaxOffset then
+              Offset <= Offset + 128;
+              State <= LoadMsg;
+            -- Finished!
+            else
+              Offset <= 0;
+              HashOut <= Hout ... -- First kHashLen bytes of H in little endian
+              Done   <= true;
+              State  <= Done;
+            end if;
 
           end if;
 
-        when WaitMix1 =>
+        -- Wait for push and load partial 128-bit messag into the compressor
+        when LoadMsg =>
 
-         
-
-        when WaitMix2 =>
-
-          
-
+          if Push then
+            MsgPart <= Msg;
+            Hin     <= Hout;
+            Last    <= Offset = MaxOffset;
+            StartF  <= true;
+            Busy    <= true;
+            State   <= Compress;
+          end if;
           
       end case;
 

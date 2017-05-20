@@ -16,7 +16,7 @@ entity MixG is
     aReset: in  std_logic;
     Clk   : in  std_logic;
     Start : in  boolean;
-    Valid : out boolean;
+    Valid : out std_logic;
     A_in  : in  unsigned(63 downto 0);
     B_in  : in  unsigned(63 downto 0);
     C_in  : in  unsigned(63 downto 0);
@@ -32,27 +32,27 @@ end MixG;
 
 architecture rtl of MixG is
   signal A, B, C, D : unsigned(63 downto 0);
-  signal cStep : unsigned(2 downto 0) := (others => '0');
+  signal cStep : natural range 0 to 7 := 0;
 begin
 
   Mix: process(aReset, Clk)
   begin
     if aReset = '1' then
-      cStep  <= (others => '0');
+      cStep  <= 0;
       A     <= (others => '0');
       B     <= (others => '0');
       C     <= (others => '0');
       D     <= (others => '0');
-      Valid <= false;
+      Valid <= '0';
       
     elsif rising_edge(Clk) then
       
-      Valid <= false;
+      Valid <= '0';
       cStep <= cStep + 1;
       
-      case(step) is
+      case(cStep) is
       
-        when x"0" =>
+        when 0 =>
           if  not Start then
           -- Get stuck in here until start is asserted
             cStep <= cStep;
@@ -60,21 +60,21 @@ begin
             A <= A_in + B_in + X;
           end if;
 
-        when x"1" =>
+        when 1 =>
           D <= (D_in xor A) ror 32;
-        when x"2" =>
+        when 2 =>
           C <= C_in + D;
-        when x"3" =>
+        when 3 =>
           B <= (B_in xor C) ror 24;
-        when x"4" =>
+        when 4 =>
           A <= A + B + Y;
-        when x"5" =>
+        when 5 =>
           D <= (D xor A) ror 16;
-        when x"6" =>
+        when 6 =>
           C <= C + D;
-        when x"7" =>
+        when 7 =>
           B <= (B xor C) ror 63; -- Rotate left 1
-          Valid <= true;
+          Valid <= '1';
           
       end case;
 

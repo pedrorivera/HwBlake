@@ -9,7 +9,7 @@ library ieee;
   use ieee.numeric_std.all;
 
 library work;
-  use work.PkgBlake2b.vhd
+  use work.PkgBlake2b.all;
 
 entity CompressF is
   port(
@@ -37,13 +37,13 @@ architecture rtl of CompressF is
   constant kMixerNum  : integer := 4;
   constant kMixRounds : integer := 12;
   
-  type State_t is (Idle, WaitMix1, WaitMix2, Done);
+  type State_t is (Idle, WaitMix1, WaitMix2);
   signal State : State_t;
 
   signal A_in, B_in, C_in, D_in, X, Y : U64Array_t(0 to kMixerNum-1);
   signal A_out, B_out, C_out, D_out     : U64Array_t(0 to kMixerNum-1);
-  signal Valid  : std_logic_vector(kMixerNum-1 downto 0);
-  signal StartG : std_logic_vector(kMixerNum-1 downto 0);
+  signal Valid  : unsigned(kMixerNum-1 downto 0);
+  signal StartG : boolean;
   signal Round : integer range 0 to kMixRounds-1;
 
 begin
@@ -53,10 +53,11 @@ begin
   ---------------------------------------------------------------------
   MixerGen: for i in 0 to kMixerNum-1 generate
 
-    Mixer: MixG
+    Mixer: entity work.MixG
     port map(
       aReset => aReset,
-      Clk    => Clk,
+      Clk   => Clk,
+      Start => StartG,
       A_in  => A_in(i),
       B_in  => B_in(i),
       C_in  => C_in(i),
@@ -90,6 +91,7 @@ begin
       D_in   <= (others => (others => '0'));
       X      <= (others => (others => '0'));
       Y      <= (others => (others => '0'));
+      Hout   <= (others => (others => '0'));
       
     elsif rising_edge(Clk) then
 
@@ -120,8 +122,8 @@ begin
             C_in(2) <= kIV(2); -- V10
             C_in(3) <= kIV(3); -- V11
 
-            D_in(0) <= kIV(4) xor Offset(31 downto 0);
-            D_in(1) <= kIV(5) -- xor Offset(63 downto 32);
+            D_in(0) <= kIV(4) xor Offset(31 downto 0); --Arguments of overloaded "xor" operator are not the same length (64 vs. 32).
+            D_in(1) <= kIV(5); -- xor Offset(63 downto 32);
             D_in(2) <= kIV(6); -- V14
             D_in(3) <= kIV(7); -- V15
 
@@ -149,7 +151,7 @@ begin
         when WaitMix1 =>
 
           -- If all the Mixers have finished. OPT: check just one
-          if Valid = Valid'high then
+          if (Valid = 2**Valid'length-1) then
             -- Feed the result into the next mix
             A_in(0) <= A_out(0); -- V0
             A_in(1) <= A_out(1); -- V1 

@@ -1,3 +1,7 @@
+library ieee;
+  use ieee.std_logic_1164.all;
+  use ieee.numeric_std.all;
+
 package PkgBlake2b is
   
   type U64Array_t is array (integer range <>) of unsigned(63 downto 0);

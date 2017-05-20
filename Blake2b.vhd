@@ -12,7 +12,7 @@ library ieee;
   use ieee.numeric_std.all;
 
 library work;
-  use work.PkgBlake2b.vhd
+  use work.PkgBlake2b.all;
 
 entity Blake2b is
   port(
@@ -37,18 +37,22 @@ end Blake2b;
 
 architecture rtl of Blake2b is
   
-  type State_t is (Done, LoadMsg, Compress);
+  type State_t is (HashDone, LoadMsg, Compress);
   signal State : State_t;
+  signal StartF : boolean;
+  signal DoneF  : boolean;
+  signal Last   : boolean;
 
-  signal H : U64Array_t(0 to 7);
-
+  signal MsgPart   : U64Array_t(15 downto 0);
+  signal Hin, Hout : U64Array_t(0 to 7);
+  signal MaxOffset, Offset : unsigned(kMaxMsgLen-1 downto 0); -- TODO: revise MaxOffset
 begin
 
   ---------------------------------------------------------------------
   -- Compressor Instantiation
   ---------------------------------------------------------------------
 
-  Compressor: CompressF
+  Compressor: entity work.CompressF
   port map(
     aReset   => aReset,
     Clk      => Clk,
@@ -64,32 +68,32 @@ begin
   --------------------------------------------------------------------
   -- Control FSM
   --------------------------------------------------------------------
-  Compress: process(aReset, Clk)
+  Main: process(aReset, Clk)
   begin
 
     if aReset = '1' then
       
       Hin    <= kIV;
-      State  <= Done;
-      Offset <= 0;
-      MaxOffset <= 0;
+      State  <= HashDone;
+      Offset <= (others => '0');
+      MaxOffset <= (others => '0');
       Busy <= false;
       Done <= true;
-      HashOut <= --zeros
+      HashOut <= (others => (others => '0'));
 
     elsif rising_edge(Clk) then
       
       case(State) is
         
         -- Idle state
-        when Done =>
+        when HashDone =>
 
           if Push then
             -- Load first partial message
             Hin       <= kIV;
             MsgPart   <= Msg;
             MaxOffset <= MsgLen - 128;
-            Offset    <= 0;
+            Offset    <= (others => '0');
             Last      <= false;
             StartF    <= true;
             Busy      <= true;
@@ -107,10 +111,9 @@ begin
               State <= LoadMsg;
             -- Finished!
             else
-              Offset <= 0;
               HashOut <= Hout ... -- First kHashLen bytes of H in little endian
               Done   <= true;
-              State  <= Done;
+              State  <= HashDone;
             end if;
 
           end if;

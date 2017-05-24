@@ -44,7 +44,7 @@ architecture rtl of CompressF is
   signal A_out, B_out, C_out, D_out     : U64Array_t(0 to kMixerNum-1);
   signal Valid  : unsigned(kMixerNum-1 downto 0);
   signal StartG : boolean;
-  signal Round : integer range 0 to kMixRounds-1;
+  signal Round : natural range 0 to kMixRounds-1;
 
 begin
 
@@ -122,7 +122,7 @@ begin
             C_in(2) <= kIV(2); -- V10
             C_in(3) <= kIV(3); -- V11
 
-            D_in(0) <= kIV(4) xor x"00000000" & Offset(31 downto 0);
+            D_in(0) <= kIV(4) xor x"00000000" & Offset(31 downto 0); --Something is wrong here
             D_in(1) <= kIV(5); -- xor Offset(127 downto 64);
             D_in(2) <= kIV(6); -- V14
             D_in(3) <= kIV(7); -- V15
@@ -151,7 +151,7 @@ begin
         when WaitMix1 =>
 
           -- If all the Mixers have finished. OPT: check just one
-          if (Valid = 2**Valid'length-1) then
+          if Valid(0) = '1' then
             -- Feed the result into the next mix
             A_in(0) <= A_out(0); -- V0
             A_in(1) <= A_out(1); -- V1 
@@ -184,18 +184,16 @@ begin
             Y(3) <= Msg(kSigma(Round mod 10, 15));
 
             StartG <= true;
-            State  <= WaitMix1;
+            State  <= WaitMix2;
 
           end if;
 
         when WaitMix2 =>
 
           -- If all the Mixers have finished OPT: check just one
-          if Valid = Valid'high then
+          if Valid(0) = '1' then
 
-            if Round < kMixRounds then
-
-              Round <= Round + 1;
+            if Round < kMixRounds-1 then
 
               -- Feed the result into the next mix
               -- OPT: A & C vectors do the same operation in both rounds,
@@ -221,16 +219,17 @@ begin
               D_in(3) <= D_out(0); -- V15
 
               -- Mesage feed
-              X(0) <= Msg(kSigma(Round mod 10, 0));
-              Y(0) <= Msg(kSigma(Round mod 10, 1));
-              X(1) <= Msg(kSigma(Round mod 10, 2));
-              Y(1) <= Msg(kSigma(Round mod 10, 3));
-              X(2) <= Msg(kSigma(Round mod 10, 4));
-              Y(2) <= Msg(kSigma(Round mod 10, 5));
-              X(3) <= Msg(kSigma(Round mod 10, 6));
-              Y(3) <= Msg(kSigma(Round mod 10, 7));
+              X(0) <= Msg(kSigma((Round + 1) mod 10, 0));
+              Y(0) <= Msg(kSigma((Round + 1) mod 10, 1));
+              X(1) <= Msg(kSigma((Round + 1) mod 10, 2));
+              Y(1) <= Msg(kSigma((Round + 1) mod 10, 3));
+              X(2) <= Msg(kSigma((Round + 1) mod 10, 4));
+              Y(2) <= Msg(kSigma((Round + 1) mod 10, 5));
+              X(3) <= Msg(kSigma((Round + 1) mod 10, 6));
+              Y(3) <= Msg(kSigma((Round + 1) mod 10, 7));
 
               StartG <= true;
+              Round  <= Round + 1;
               State  <= WaitMix1;
 
             -- If we've done all 12 rounds

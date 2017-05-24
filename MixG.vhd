@@ -48,18 +48,22 @@ begin
     elsif rising_edge(Clk) then
       
       Valid <= '0';
-      cStep <= cStep + 1;
       
+      if cStep <  7 then
+        cStep <= cStep + 1;
+      else 
+        cStep <= 0;
+      end if;
+
       case(cStep) is
-      
+
         when 0 =>
           if not Start then
-          -- Get stuck in here until start is asserted
+          -- Get stuck in here until start is asserted (overrides cStep)
             cStep <= cStep;
           else 
             A <= A_in + B_in + X;
           end if;
-
         when 1 =>
           D <= (D_in xor A) ror 32;
         when 2 =>
@@ -77,6 +81,7 @@ begin
           Valid <= '1';
           
       end case;
+      
 
     end if;
   end process;

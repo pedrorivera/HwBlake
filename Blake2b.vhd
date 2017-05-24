@@ -48,7 +48,6 @@ architecture rtl of Blake2b is
   signal MaxOffset, Offset : unsigned(kMaxMsgLen-1 downto 0); -- TODO: revise MaxOffset
 
 begin
-
   ---------------------------------------------------------------------
   -- Compressor Instantiation
   ---------------------------------------------------------------------
@@ -74,13 +73,16 @@ begin
 
     if aReset = '1' then
       
+      Busy   <= false;
+      Last   <= false;
+      StartF <= false;
+      Done   <= false;
       Hin    <= kIV;
       State  <= HashDone;
       Offset    <= (others => '0');
       MaxOffset <= (others => '0');
-      Busy <= false;
-      Done <= true;
-      HashOut <= (others => (others => '0'));
+      MsgPart   <= (others => (others => '0'));
+      HashOut   <= (others => (others => '0'));
 
     elsif rising_edge(Clk) then
       
@@ -93,11 +95,11 @@ begin
             -- Load first partial message
             Hin       <= kIV;
             MsgPart   <= Msg;
-            MaxOffset <= MsgLen - 128;
             Offset    <= (others => '0'); -- TODO: revise, should this start at 0 or 128?
-            Last      <= false;
-            StartF    <= true;
+            MaxOffset <= MsgLen - 128;    -- TODO: coerce to multiples of 128 in case msg isn't one.
+            Last      <= MsgLen <= 128;
             Busy      <= true;
+            StartF    <= true;
             State     <= Compress;
           end if;
 

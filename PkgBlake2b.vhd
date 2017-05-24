@@ -22,15 +22,15 @@ package PkgBlake2b is
     (10, 02, 08, 04, 07, 06, 01, 05, 15, 11, 09, 14, 03, 12, 13, 00)
   );
 
-  constant kIV : U64Array_t(0 to 7) := (
-  	x"cbbb9d5dc1059ed8",
-  	x"629a292a367cd507",
-  	x"9159015a3070dd17",
-  	x"152fecd8f70e5939",
-  	x"67332667ffc00b31",
-  	x"8eb44a8768581511",
-  	x"db0c2e0d64f98fa7",
-  	x"47b5481dbefa4fa4"
+  constant kIV : U64Array_t(7 downto 0) := (
+    x"5be0cd19137e2179",
+    x"1f83d9abfb41bd6b",
+    x"9b05688c2b3e6c1f",
+    x"510e527fade682d1",
+    x"a54ff53a5f1d36f1",
+    x"3c6ef372fe94f82b",
+    x"bb67ae8584caa73b",
+  	x"6a09e667f3bcc908"
   );
 
   -- kMaxMsgLen defines the width of the MsgLen port in the Blake2b core.

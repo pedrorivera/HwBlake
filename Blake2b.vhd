@@ -28,7 +28,7 @@ entity Blake2b is
     Msg   : in U64Array_t(15 downto 0);
     -- Full message length in bytes. Only needs to be valid if Done is true.
     MsgLen : in unsigned(kMaxMsgLen-1 downto 0) ;
-    -- Optional key parameter
+    -- Optional key parameter (currently not implemented)
     Key   : in std_logic_vector(63 downto 0);
     -- Result, only valid when Done is true.
     HashOut  : out U64Array_t(7 downto 0)
@@ -46,6 +46,7 @@ architecture rtl of Blake2b is
   signal MsgPart   : U64Array_t(15 downto 0);
   signal Hin, Hout : U64Array_t(0 to 7);
   signal MaxOffset, Offset : unsigned(kMaxMsgLen-1 downto 0); -- TODO: revise MaxOffset
+
 begin
 
   ---------------------------------------------------------------------
@@ -75,7 +76,7 @@ begin
       
       Hin    <= kIV;
       State  <= HashDone;
-      Offset <= (others => '0');
+      Offset    <= (others => '0');
       MaxOffset <= (others => '0');
       Busy <= false;
       Done <= true;
@@ -93,7 +94,7 @@ begin
             Hin       <= kIV;
             MsgPart   <= Msg;
             MaxOffset <= MsgLen - 128;
-            Offset    <= (others => '0');
+            Offset    <= (others => '0'); -- TODO: revise, should this start at 0 or 128?
             Last      <= false;
             StartF    <= true;
             Busy      <= true;
@@ -111,9 +112,9 @@ begin
               State <= LoadMsg;
             -- Finished!
             else
-              HashOut <= Hout ... -- First kHashLen bytes of H in little endian
-              Done   <= true;
-              State  <= HashDone;
+              HashOut <= Hout; -- First kHashLen bytes of H in little endian
+              Done    <= true;
+              State   <= HashDone;
             end if;
 
           end if;

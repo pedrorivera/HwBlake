@@ -53,7 +53,7 @@ begin
       case(cStep) is
       
         when 0 =>
-          if  not Start then
+          if not Start then
           -- Get stuck in here until start is asserted
             cStep <= cStep;
           else 
@@ -73,7 +73,7 @@ begin
         when 6 =>
           C <= C + D;
         when 7 =>
-          B <= (B xor C) ror 63; -- Rotate left 1
+          B <= (B xor C) rol 1; -- Rotate right 63
           Valid <= '1';
           
       end case;

@@ -28,11 +28,9 @@ architecture test of Blake2b_tb is
   );
 
   constant kExpectedH : U64Array_t(7 downto 0) := (
-    x"0D4D1C983FA580BA", x"E9F6129FB697276A", x"B7C45A68142F214C", x"D1A2FFDB6FBB124B", 
-    x"2D79AB2A39C5877D", x"95CC3345DED552C2", x"5A92F1DBA88AD318", x"239900D4ED8623B9"
-  );
-
-  --shared variable Rand : Random_t;
+    x"239900D4ED8623B9", x"5A92F1DBA88AD318", x"95CC3345DED552C2", x"2D79AB2A39C5877D",   
+    x"D1A2FFDB6FBB124B", x"B7C45A68142F214C",  x"E9F6129FB697276A", x"0D4D1C983FA580BA"
+  );                                                                  
 
   procedure WaitClk(N : positive := 1) is
   begin
@@ -43,7 +41,6 @@ architecture test of Blake2b_tb is
 
 begin
 
-  aReset <= '1', '0' after 10 ns;
   Clk <= not Clk after 10 ns when aReset = '0' else '0';
 
   DUT: entity work.Blake2b
@@ -60,20 +57,22 @@ begin
 
   Main: process
   begin
-    wait until aReset = '0';
-    
+    aReset <= '1', '0' after 10 ns;
+
     -- Check initial state of flags
     assert not Done report "Done should be initially false" severity error;
     assert not Busy report "Busy should be initially false" severity error;
 
     -- Push a single block test message to the core
     Msg    <= kTestMsg;
-    MsgLen <= to_unsigned(128, MsgLen'length);
+    MsgLen <= to_unsigned(3, MsgLen'length); -- 0x636261
     Push   <= true;
 
     wait until Done;
     assert HashOut = kExpectedH report "Result does not match kExpectedH" severity error;
 
+    WaitClk;
+    aReset <= '1';
     wait;
   end process;
 

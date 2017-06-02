@@ -122,7 +122,7 @@ begin
             C_in(2) <= kIV(2); -- V10
             C_in(3) <= kIV(3); -- V11
 
-            D_in(0) <= kIV(4) xor x"00000000" & Offset(31 downto 0); --Something is wrong here
+            D_in(0) <= kIV(4) xor (x"00000000" & Offset(31 downto 0)); 
             D_in(1) <= kIV(5); -- xor Offset(127 downto 64);
             D_in(2) <= kIV(6); -- V14
             D_in(3) <= kIV(7); -- V15

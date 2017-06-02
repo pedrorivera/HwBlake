@@ -44,7 +44,7 @@ architecture rtl of Blake2b is
   signal Last   : boolean;
 
   signal MsgPart   : U64Array_t(15 downto 0);
-  signal Hin, Hout : U64Array_t(0 to 7);
+  signal Hin, Hout : U64Array_t(7 downto 0);
   signal MaxOffset, Offset : unsigned(kMaxMsgLen-1 downto 0); -- TODO: revise MaxOffset
 
 begin
@@ -90,13 +90,13 @@ begin
         
         -- Idle state
         when HashDone =>
-
           if Push then
             -- Load first partial message
-            Hin       <= kIV;
+            Hin(7 downto 1) <= kIV(7 downto 1);
+            Hin(0)    <= kIV(0) xor (x"000000000101" & kKeyLen & kHashLen);
             MsgPart   <= Msg;
-            Offset    <= (others => '0'); -- TODO: revise, should this start at 0 or 128?
-            MaxOffset <= MsgLen - 128;    -- TODO: coerce to multiples of 128 in case msg isn't one.
+            Offset    <= Offset + 3; -- !!! TODO: Fix to adjust according to msg len
+            MaxOffset <= MsgLen;
             Last      <= MsgLen <= 128;
             Busy      <= true;
             StartF    <= true;
@@ -105,7 +105,7 @@ begin
 
         -- Waits for compression to be done
         when Compress =>
-
+          StartF <= false;
           if DoneF then
             Busy  <= false;
             -- If there are blocks remaining

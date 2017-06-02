@@ -7,6 +7,18 @@ package PkgBlake2b is
   type U64Array_t is array (integer range <>) of unsigned(63 downto 0);
   type SigmaArray_t is array (0 to 9, 0 to 15) of integer range 0 to 15;
 
+  -- Length in bytes of the hashed result
+  constant kHashLen : unsigned(7 downto 0) := x"40"; -- 64 bytes
+  
+  -- Length in bytes of the optional key
+  constant kKeyLen  : unsigned(7 downto 0) := x"00";
+
+  -- kMaxMsgLen defines the width of the MsgLen port in the Blake2b core.
+  -- According to the standard this can be up to 128-bits, which represents
+  -- as much as 3.4x10^29 GB. For practicity the default value is set to 32,
+  -- enabling up to ~4.3 GB.
+  constant kMaxMsgLen : integer := 32;
+  
   -- Message schedule for Blake2b
   -- Reference: https://tools.ietf.org/html/rfc7693#section-2.7
   constant kSigma : SigmaArray_t := (
@@ -30,19 +42,7 @@ package PkgBlake2b is
     x"a54ff53a5f1d36f1",
     x"3c6ef372fe94f82b",
     x"bb67ae8584caa73b",
-  	x"6a09e667f3bcc908"
+    x"6a09e667f3bcc908"
   );
-
-  -- kMaxMsgLen defines the width of the MsgLen port in the Blake2b core.
-  -- According to the standard this can be up to 128-bits, which represents
-  -- as much as 3.4x10^29 GB. For practicity the default value is set to 32,
-  -- enabling up to ~4.3 GB.
-  constant kMaxMsgLen : integer := 32;
-  
-  -- Length in bytes of the hashed result
-  constant kHashLen : integer := 512;
-  
-  -- Length in bytes of the optional key
-  constant kKeyLen  : integer := 64;
   
 end PkgBlake2b;

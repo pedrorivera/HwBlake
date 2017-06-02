@@ -73,9 +73,10 @@ begin
   end generate MixerGen;
 
   Main: process
+    variable ResultVector : U64Array_t(0 to 15) := (others => (others => '0'));
   begin
 
-    wait until aReset = '0'; WaitClk;
+    aReset <= '1'; wait for 10 ns; aReset <= '0';
 
     A_in(0) <= kTestV(0); -- V0
     A_in(1) <= kTestV(1); -- V1 
@@ -109,6 +110,7 @@ begin
 
     Start <= true; WaitClk; Start <= false;
     wait until Valid = x"F";
+    WaitClk;
 
     -- Feed back the first mix result
     A_in(0) <= A_out(0); -- V0
@@ -143,7 +145,30 @@ begin
 
     Start <= true; WaitClk; Start <= false;
     wait until Valid = x"F";
+    WaitClk;
 
+    --- VERIFICATION --------
+
+    ResultVector(0)  := A_out(0);
+    ResultVector(1)  := A_out(1);
+    ResultVector(2)  := A_out(2);
+    ResultVector(3)  := A_out(3);
+    ResultVector(4)  := B_out(3);
+    ResultVector(5)  := B_out(0);
+    ResultVector(6)  := B_out(1);
+    ResultVector(7)  := B_out(2);
+    ResultVector(8)  := C_out(2);
+    ResultVector(9)  := C_out(3);
+    ResultVector(10) := C_out(0);
+    ResultVector(11) := C_out(1);
+    ResultVector(12) := D_out(1);
+    ResultVector(13) := D_out(2);
+    ResultVector(14) := D_out(3);
+    ResultVector(15) := D_out(0);
+
+    assert kExpectedV = ResultVector report "Test Failed" severity error;
+
+    aReset <= '1';
     wait;
   end process;
 

@@ -32,7 +32,7 @@ end MixG;
 
 architecture rtl of MixG is
   signal A, B, C, D : unsigned(63 downto 0);
-  signal cStep : natural range 0 to 7 := 0;
+  signal cStep : natural range 0 to 3 := 0;
 begin
 
   Mix: process(aReset, Clk)
@@ -49,40 +49,32 @@ begin
       
       Valid <= '0';
       
-      if cStep <  7 then
+      if cStep < 3 then
         cStep <= cStep + 1;
       else 
         cStep <= 0;
       end if;
 
       case(cStep) is
-
         when 0 =>
           if not Start then
           -- Get stuck in here until start is asserted (overrides cStep)
             cStep <= cStep;
           else 
             A <= A_in + B_in + X;
+            D <= (D_in xor (A_in + B_in + X)) ror 32;
           end if;
         when 1 =>
-          D <= (D_in xor A) ror 32;
-        when 2 =>
           C <= C_in + D;
-        when 3 =>
-          B <= (B_in xor C) ror 24;
-        when 4 =>
+          B <= (B_in xor (C_in + D)) ror 24;
+        when 2 =>
           A <= A + B + Y;
-        when 5 =>
-          D <= (D xor A) ror 16;
-        when 6 =>
+          D <= (D xor (A + B + Y)) ror 16;
+        when 3 =>
           C <= C + D;
-        when 7 =>
-          B <= (B xor C) rol 1; -- Rotate right 63
-          Valid <= '1';
-          
+          B <= (B xor (C + D)) rol 1; -- Rotate right 63
+          Valid <= '1';          
       end case;
-      
-
     end if;
   end process;
 

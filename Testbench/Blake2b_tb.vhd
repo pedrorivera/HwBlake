@@ -1,4 +1,5 @@
 -- Testbench for Blake2b.vhd
+-- Current compression performance: 122 clk cycles
 
 library ieee;
   use ieee.std_logic_1164.all;
@@ -63,6 +64,7 @@ begin
     assert not Done report "Done should be initially false" severity error;
     assert not Busy report "Busy should be initially false" severity error;
 
+    wait until aReset = '0';
     -- Push a single block test message to the core
     Msg    <= kTestMsg;
     MsgLen <= to_unsigned(3, MsgLen'length); -- 0x636261
